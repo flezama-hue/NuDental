@@ -1,0 +1,56 @@
+name: Importar proyecto NuDental
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/import-nudental.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Descargar paquete fuente validado
+        env:
+          SOURCE_URL_B64: aHR0cHM6Ly9zZG1udHByYnJhemlsc291dGgub2FpdXNlcmNvbnRlbnQuY29tL2ZpbGVzLzAwMDAwMDAwLTlhZWMtODIwZS1iY2E5LTk2YTRkNWMyNzA5My9yYXc/c2U9MjAyNi0xMC0yNlQyMyUzQTAxJTNBMDVaJnNwPXImc3Y9MjAyNi0wMi0wNiZzcj1iJnNjaWQ9MTQyMjBlMjEtZTk1MC01MDEzLTk2MmEtZjhhM2NkMWMxNDRkJnNrb2lkPTlmY2FmZGFiLTFhOWEtNDhhMS04MzNlLTZmMGRjZTgxZmM2NiZza3RpZD1hNDhjY2E1Ni1lNmRhLTQ4NGUtYTgxNC05Yzg0OTY1MmJjYjMmc2t0PTIwMjYtMTAtMjZUMTclM0EwNiUzQTAxWiZza2U9MjAyNi0xMC0yN1QxNyUzQTA2JTNBMDFaJnNrcz1iJnNrdj0yMDI2LTAyLTA2JnNpZz1KanB5bDF3WW03MzdBUVRFeGJaWExqY3dUcDFNdlRjSGszNHJuYk1Tb0M0JTNE
+          REPORT_URL_B64: aHR0cHM6Ly9zZG1udHByYnJhemlsc291dGgub2FpdXNlcmNvbnRlbnQuY29tL2ZpbGVzLzAwMDAwMDAwLTE5OTQtODIwZS1iZTFlLWY5Y2E1NGE1MDY2Mi9yYXc/c2U9MjAyNi0xMC0yNlQyMyUzQTAxJTNBMDlaJnNwPXImc3Y9MjAyNi0wMi0wNiZzcj1iJnNjaWQ9YzcyM2I0MjktYjRjYi01MDUzLTg3OGEtYzRkZmI1ZWJlMDAzJnNrb2lkPTlmY2FmZGFiLTFhOWEtNDhhMS04MzNlLTZmMGRjZTgxZmM2NiZza3RpZD1hNDhjY2E1Ni1lNmRhLTQ4NGUtYTgxNC05Yzg0OTY1MmJjYjMmc2t0PTIwMjYtMTAtMjZUMTclM0ExMSUzQTI2WiZza2U9MjAyNi0xMC0yN1QxNyUzQTExJTNBMjZaJnNrcz1iJnNrdj0yMDI2LTAyLTA2JnNpZz1XRGRSSzNwVVpaMVVEOHQ0TmxzQjMxZmM0cGJlcHlTeTMyeVdTTk1VNHpJJTNE
+        run: |
+          set -euo pipefail
+          SOURCE_URL="$(printf '%s' "$SOURCE_URL_B64" | base64 --decode)"
+          REPORT_URL="$(printf '%s' "$REPORT_URL_B64" | base64 --decode)"
+          curl --fail --location --retry 3 "$SOURCE_URL" --output /tmp/nudental-source.zip
+          curl --fail --location --retry 3 "$REPORT_URL" --output /tmp/nudental-report.docx
+          mkdir -p /tmp/nudental-source
+          unzip -q /tmp/nudental-source.zip -d /tmp/nudental-source
+          test -f /tmp/nudental-source/NuDental/package.json
+          test -s /tmp/nudental-report.docx
+
+      - name: Materializar proyecto en la raíz
+        run: |
+          set -euo pipefail
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/import-nudental.yml' \
+            /tmp/nudental-source/NuDental/ ./
+          mkdir -p docs
+          cp /tmp/nudental-report.docx docs/Informe_Detallado_Implementacion_NuDental_Vistas_1_y_2.docx
+          rm -rf .import-parts
+          rm -f .github/workflows/import-nudental.yml
+
+      - name: Confirmar importación
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'feat: publicar proyecto NuDental completo'
+          git push origin HEAD:main
