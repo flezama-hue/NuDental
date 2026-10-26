@@ -1,0 +1,380 @@
+openapi: 3.1.0
+info:
+  title: NuDental API
+  version: 0.2.0
+  description: API del portal clínico y de la administración NuDental. El MRP se integra mediante eventos; no comparte base de datos.
+servers:
+  - url: /api
+security:
+  - sessionCookie: []
+tags:
+  - name: Auth
+  - name: Vista 1
+  - name: Vista 2
+  - name: Integración
+paths:
+  /health:
+    get:
+      security: []
+      summary: Verifica disponibilidad de API y base
+      responses:
+        '200': { description: Disponible }
+  /auth/login:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Inicia sesión y emite cookie HttpOnly
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 1, maxLength: 128 }
+      responses:
+        '200': { description: Sesión iniciada }
+        '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      responses:
+        '204': { description: Sesión invalidada }
+  /auth/me:
+    get:
+      tags: [Auth]
+      responses:
+        '200': { description: Usuario autenticado }
+        '401': { $ref: '#/components/responses/Error' }
+  /dashboard:
+    get:
+      summary: Resumen dependiente del rol
+      responses:
+        '200': { description: Métricas de la vista clínica o administrativa }
+  /patients:
+    get:
+      tags: [Vista 1]
+      summary: Lista referencias clínicas de la cuenta autenticada
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0 } }
+      responses:
+        '200': { description: Lista aislada por clínica }
+    post:
+      tags: [Vista 1]
+      summary: Crea una referencia clínica
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePatient' }
+      responses:
+        '201': { description: Creado }
+        '409': { $ref: '#/components/responses/Error' }
+  /catalog:
+    get:
+      summary: Catálogo con precio vigente de la clínica cuando aplica
+      responses:
+        '200': { description: Productos activos }
+  /cases:
+    get:
+      summary: Lista casos del alcance autenticado
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/CaseStatus' } }
+        - { name: q, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Casos de la clínica o laboratorio }
+    post:
+      tags: [Vista 1]
+      summary: Crea y envía un caso al laboratorio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCase' }
+      responses:
+        '201': { description: Caso, orden y evento de integración creados }
+        '409': { $ref: '#/components/responses/Error' }
+  /cases/{caseId}:
+    get:
+      summary: Detalle autorizado del caso
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      responses:
+        '200': { description: Caso, trabajos, archivos, diseños, mensajes, pagos, calidad y envíos }
+        '404': { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/messages:
+    post:
+      summary: Registra mensaje compartido o nota interna autorizada
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, minLength: 1, maxLength: 5000 }
+                messageType: { enum: [text, system, approval, quality, logistics, technical_query] }
+                visibility: { enum: [shared, internal] }
+      responses:
+        '201': { description: Mensaje persistido y notificación en cola }
+  /cases/{caseId}/files:
+    post:
+      summary: Registra metadatos de un archivo ya cargado en almacenamiento privado
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FileMetadata' }
+      responses:
+        '201': { description: Archivo registrado; puede crear versión de diseño }
+  /cases/{caseId}/design-review:
+    post:
+      tags: [Vista 1]
+      summary: Aprueba o solicita cambios de una versión exacta
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [designId, decision]
+              properties:
+                designId: { type: string, format: uuid }
+                decision: { enum: [approved, changes_requested] }
+                comment: { type: string, maxLength: 2000 }
+      responses:
+        '200': { description: Revisión formal registrada }
+        '409': { $ref: '#/components/responses/Error' }
+  /cases/{caseId}/payments:
+    post:
+      tags: [Vista 1]
+      summary: Registra evidencia o referencia de un pago para revisión
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, reference]
+              properties:
+                amount: { type: number, exclusiveMinimum: 0 }
+                reference: { type: string, minLength: 1, maxLength: 200 }
+                evidenceNote: { type: string, maxLength: 1000 }
+      responses:
+        '201': { description: Pago en estado review }
+  /admin/cases/{caseId}/status:
+    patch:
+      tags: [Vista 2]
+      summary: Actualiza el estado comercial/visible del caso
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/CaseStatus' }
+      responses:
+        '200': { description: Estado y evento actualizados }
+  /admin/cases/{caseId}/tracking:
+    post:
+      tags: [Vista 2]
+      summary: Publica un resumen de avance para el cliente
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      responses:
+        '200': { description: Seguimiento actualizado }
+  /admin/cases/{caseId}/quality-checks:
+    post:
+      tags: [Vista 2]
+      summary: Registra control de calidad compartible
+      parameters:
+        - { $ref: '#/components/parameters/CaseId' }
+      responses:
+        '201': { description: Control registrado }
+  /admin/payments:
+    get:
+      tags: [Vista 2]
+      summary: Lista pagos del laboratorio
+      responses:
+        '200': { description: Pagos }
+  /admin/payments/{paymentId}:
+    patch:
+      tags: [Vista 2]
+      summary: Concilia o rechaza un pago
+      parameters:
+        - { name: paymentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Pago revisado }
+        '403': { $ref: '#/components/responses/Error' }
+  /admin/inventory:
+    get:
+      tags: [Vista 2]
+      summary: Lista existencias y reservas
+      responses:
+        '200': { description: Inventario }
+    post:
+      tags: [Vista 2]
+      summary: Crea material; requiere lab_manager
+      responses:
+        '201': { description: Material creado }
+  /admin/inventory/{itemId}/movements:
+    post:
+      tags: [Vista 2]
+      summary: Registra entrada, salida, reserva, liberación, consumo, devolución o ajuste
+      parameters:
+        - { name: itemId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '201': { description: Movimiento atómico }
+        '409': { $ref: '#/components/responses/Error' }
+  /admin/suppliers:
+    get:
+      tags: [Vista 2]
+      responses:
+        '200': { description: Proveedores }
+    post:
+      tags: [Vista 2]
+      summary: Crea proveedor; requiere lab_manager
+      responses:
+        '201': { description: Proveedor creado }
+  /admin/purchase-orders:
+    get:
+      tags: [Vista 2]
+      responses:
+        '200': { description: Órdenes de compra }
+    post:
+      tags: [Vista 2]
+      summary: Crea orden y líneas de compra; requiere lab_manager
+      responses:
+        '201': { description: Orden creada }
+  /admin/shipments:
+    get:
+      tags: [Vista 2]
+      responses:
+        '200': { description: Envíos del laboratorio }
+    post:
+      tags: [Vista 2]
+      summary: Prepara envío después de calidad aprobada
+      responses:
+        '201': { description: Envío creado con instrucción de cobranza }
+  /admin/shipments/{shipmentId}:
+    patch:
+      tags: [Vista 2]
+      summary: Programa, despacha, entrega o registra incidencia
+      parameters:
+        - { name: shipmentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Envío actualizado }
+  /admin/invoices:
+    get:
+      tags: [Vista 2]
+      responses:
+        '200': { description: Facturas administrativas }
+    post:
+      tags: [Vista 2]
+      summary: Emite factura piloto después de entrega; requiere lab_manager
+      responses:
+        '201': { description: Factura creada }
+  /admin/clients:
+    get:
+      tags: [Vista 2]
+      summary: Lista cuentas clínicas; requiere lab_manager
+      responses:
+        '200': { description: Clientes y exposición básica }
+  /admin/price-lists:
+    get:
+      tags: [Vista 2]
+      summary: Lista tarifas; requiere lab_manager
+      responses:
+        '200': { description: Tarifas }
+  /admin/integrations/outbox:
+    get:
+      tags: [Integración]
+      summary: Inspecciona eventos persistidos; requiere lab_manager
+      responses:
+        '200': { description: Eventos pendientes o procesados }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: nudental_session
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Error:
+      description: Error controlado
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+  schemas:
+    CaseStatus:
+      enum: [draft, submitted, received, accepted, design_review, production, shipped, delivered, rejected, rework, cancelled]
+    CreatePatient:
+      type: object
+      additionalProperties: false
+      required: [name, birthDate, gender, internalId]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 150 }
+        birthDate: { type: string, format: date }
+        gender: { enum: [Masculino, Femenino, Otro] }
+        internalId: { type: string, minLength: 1, maxLength: 50 }
+    CreateCase:
+      type: object
+      required: [patientId, productId, title]
+      properties:
+        patientId: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        title: { type: string, minLength: 2, maxLength: 180 }
+        instructions: { type: string, maxLength: 5000 }
+        material: { type: string, maxLength: 120 }
+        shade: { type: string, maxLength: 50 }
+        tooth: { type: [integer, 'null'], minimum: 11, maximum: 48 }
+        quantity: { type: integer, minimum: 1, maximum: 50 }
+        urgency: { enum: [standard, express] }
+        dueDate: { type: [string, 'null'], format: date }
+        paymentMode: { enum: [advance_balance, pay_on_delivery, monthly_invoice] }
+        clientReference: { type: string, maxLength: 100 }
+        shippingAddress: { type: string, maxLength: 500 }
+        submissionSource: { enum: [manual, panda, external] }
+    FileMetadata:
+      type: object
+      required: [originalName, mediaType, objectKey, bytes, sha256]
+      properties:
+        originalName: { type: string, maxLength: 255 }
+        mediaType: { type: string, maxLength: 120 }
+        objectKey: { type: string, maxLength: 500 }
+        bytes: { type: integer, minimum: 1 }
+        sha256: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
+        purpose: { enum: [attachment, design] }
+        modelLabel: { type: string, maxLength: 120 }

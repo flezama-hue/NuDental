@@ -1,0 +1,35 @@
+{
+  "project": "NuDental",
+  "package": "nudental-platform",
+  "version": "0.2.0",
+  "scope": [
+    "Vista 1 - odontólogo y clínica",
+    "Vista 2 - administración NuDental"
+  ],
+  "generated_at": "2026-10-26T16:30:00-05:00",
+  "source_validation": {
+    "provider": "GitHub Actions",
+    "run_id": 40404443971,
+    "job": "fix-validate-export",
+    "conclusion": "success",
+    "validated_commit": "54b816771fa27c63b030cc03948229385672cd34",
+    "commands": [
+      "npm ci",
+      "npm run check"
+    ]
+  },
+  "inventory": {
+    "files": 105,
+    "versionable_text_lines": 16239,
+    "http_operations": 39,
+    "migration_002_tables": 25,
+    "migration_002_indexes": 15,
+    "integration_subtests": 14
+  },
+  "publishing": {
+    "proposed_repository": "flezama-hue/NuDental",
+    "visibility": "private",
+    "default_branch": "main",
+    "instructions": "TRANSFERENCIA_GITHUB.md"
+  }
+}

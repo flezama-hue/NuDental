@@ -1,0 +1,48 @@
+{
+  "name": "nudental-platform",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "lint": "tsc --noEmit",
+    "dev:frontend": "vite --port=3000 --host=127.0.0.1 --strictPort",
+    "dev:api": "node --import tsx server/index.ts",
+    "db:migrate": "node --import tsx server/cli.ts",
+    "db:seed": "node --import tsx server/cli.ts seed",
+    "test": "node --import tsx --test server/tests/api.test.ts",
+    "check": "npm run lint && npm test && npm run build"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@google/genai": "^2.4.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@vitejs/plugin-react": "^5.0.4",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "pg": "^8.23.1",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "vite": "^6.2.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@types/pg": "^8.23.1",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.25.0",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "description": "Plataforma NuDental para el portal clínico y la administración del laboratorio dental digital."
+}

@@ -1,0 +1,1125 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NuDental - contrato base v0.1",
+    "version": "0.1.0",
+    "description": "Contrato de la base local. x-implemented distingue rutas reales de borradores. Operaciones de cambio exigen Origin permitido y JSON. Solo datos ficticios durante desarrollo."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Proxy Vite local; API interna 3001"
+    }
+  ],
+  "security": [
+    {
+      "sessionCookie": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Implementado"
+    },
+    {
+      "name": "Propuesto"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Comprobar API y conexión a base",
+        "x-implemented": true,
+        "tags": [
+          "Implementado"
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado correcto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "stage": {
+                      "type": "string",
+                      "enum": [
+                        "local-foundation"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Iniciar sesión y establecer cookie HttpOnly",
+        "x-implemented": true,
+        "tags": [
+          "Implementado"
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado correcto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "user"
+                  ],
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "nudental_session opaca, HttpOnly, SameSite=Lax, Path=/api; Secure en producción. Caduca en 8 horas.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol u origen no permitido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de intentos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Consultar identidad, rol y pertenencia",
+        "x-implemented": true,
+        "tags": [
+          "Implementado"
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado correcto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "user"
+                  ],
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol u origen no permitido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Revocar sesión; es idempotente sin cookie",
+        "x-implemented": true,
+        "tags": [
+          "Implementado"
+        ],
+        "responses": {
+          "204": {
+            "description": "Resultado correcto"
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol u origen no permitido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patients": {
+      "get": {
+        "summary": "Listar pacientes de la clínica autenticada",
+        "x-implemented": true,
+        "tags": [
+          "Implementado"
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado correcto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "limit",
+                    "offset"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Patient"
+                      }
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol u origen no permitido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Crear paciente en la clínica de la sesión",
+        "x-implemented": true,
+        "tags": [
+          "Implementado"
+        ],
+        "responses": {
+          "201": {
+            "description": "Resultado correcto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Patient"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol u origen no permitido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Se requiere JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patients/{id}": {
+      "get": {
+        "summary": "Obtener paciente de su clínica por ID",
+        "x-implemented": true,
+        "tags": [
+          "Implementado"
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado correcto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Patient"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Rol u origen no permitido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Entrada inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Editar paciente [PROPUESTO]",
+        "description": "Definir campos editables y auditoría. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/catalog": {
+      "get": {
+        "summary": "Consultar catálogo [PROPUESTO]",
+        "description": "Filtrar productos activos y opciones válidas. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases": {
+      "get": {
+        "summary": "Listar casos [PROPUESTO]",
+        "description": "Filtrar por clínica o laboratorio asignado, paginar. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear caso [PROPUESTO]",
+        "description": "patientId, título, ítems e instrucciones; comprobar pertenencia. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}": {
+      "get": {
+        "summary": "Obtener detalle de caso [PROPUESTO]",
+        "description": "No usar nombre como llave; controlar clínica y asignación al laboratorio. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/cases/{id}/orders": {
+      "post": {
+        "summary": "Confirmar orden [PROPUESTO]",
+        "description": "Clave de idempotencia; calcular precios y recargos en servidor. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/cases/{id}/files": {
+      "post": {
+        "summary": "Preparar carga privada [PROPUESTO]",
+        "description": "Validar formato, bytes y permisos; object storage no implementado. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/cases/{id}/transitions": {
+      "post": {
+        "summary": "Cambiar estado [PROPUESTO]",
+        "description": "Validar estado anterior, actor y nueva transición. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/cases/{id}/comments": {
+      "post": {
+        "summary": "Registrar comentario [PROPUESTO]",
+        "description": "Autor obtenido de sesión; cuerpo e historial. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/cases/{id}/designs": {
+      "post": {
+        "summary": "Crear versión de diseño [PROPUESTO]",
+        "description": "Archivo privado del caso, versión y autor. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/designs/{id}/review": {
+      "post": {
+        "summary": "Aprobar o solicitar cambio [PROPUESTO]",
+        "description": "Decisión de clínica sobre una versión concreta. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/orders/{id}/payments": {
+      "post": {
+        "summary": "Reportar pago manual [PROPUESTO]",
+        "description": "Monto y referencia. Confirmación/rechazo requiere rol y ruta de revisión aún por definir. Esta ruta NO existe todavía; contrato detallado pendiente de acuerdo.",
+        "x-implemented": false,
+        "tags": [
+          "Propuesto"
+        ],
+        "responses": {
+          "404": {
+            "description": "Actualmente devuelve NOT_IMPLEMENTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "nudental_session"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Login": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "writeOnly": true
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "clinicId",
+          "laboratoryId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "clinic_admin",
+              "dentist",
+              "lab_manager",
+              "lab_technician"
+            ]
+          },
+          "clinicId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "laboratoryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "PatientCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "birthDate",
+          "gender",
+          "internalId"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Entre 1900-01-01 y la fecha actual, fecha calendario válida."
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "Masculino",
+              "Femenino",
+              "Otro"
+            ]
+          },
+          "internalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          }
+        }
+      },
+      "Patient": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "birthDate",
+          "gender",
+          "internalId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Entre 1900-01-01 y la fecha actual, fecha calendario válida."
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "Masculino",
+              "Femenino",
+              "Otro"
+            ]
+          },
+          "internalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          }
+        }
+      }
+    }
+  }
+}

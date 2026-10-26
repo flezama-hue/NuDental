@@ -1,0 +1,21 @@
+NuDental 0.2.0 — evidencia resumida de validación automatizada
+
+Fecha: 26 de octubre de 2026
+Entorno: GitHub Actions, Ubuntu, Node.js 24
+Workflow: Corregir, validar y exportar NuDental
+Run ID: 40404443971
+Job: fix-validate-export
+Resultado: success
+
+Comandos ejecutados:
+  npm ci
+  npm run check
+
+Comprobaciones aprobadas:
+  - TypeScript: tsc --noEmit
+  - Pruebas de integración: server/tests/api.test.ts
+  - Compilación de producción: vite build
+
+Commit validado: 54b816771fa27c63b030cc03948229385672cd34
+
+Limitación: esta evidencia no sustituye pruebas de carga, seguridad ofensiva, usabilidad ni integraciones reales con PANDA, MRP, WhatsApp, almacenamiento o facturación.
