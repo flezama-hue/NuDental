@@ -43,7 +43,7 @@ jobs:
           mkdir -p docs
           cp /tmp/nudental-report.docx docs/Informe_Detallado_Implementacion_NuDental_Vistas_1_y_2.docx
           rm -rf .import-parts
-          rm -f .github/workflows/import-nudental.yml
+          rm -f .github/workflows/check.yml
 
       - name: Confirmar importación
         run: |
